@@ -9,72 +9,10 @@ from sklearn.metrics import accuracy_score
 import torch.nn.functional as F
 from lime.lime_text import LimeTextExplainer
 import random
-from bs4 import BeautifulSoup
-import nltk
-from sklearn.feature_extraction.text import CountVectorizer
-from bs4 import BeautifulSoup
-import re
-from nltk.tokenize.toktok import ToktokTokenizer
-
 
 # Load the dataset
 dataset_path = 'IMDB Dataset.csv'
 df = pd.read_csv(dataset_path)
-
-#Tokenization of text
-tokenizer=ToktokTokenizer()
-#Setting English stopwords
-stopword_list=nltk.corpus.stopwords.words('english')
-
-#Removing the html strips
-def strip_html(text):
-    soup = BeautifulSoup(text, "html.parser")
-    return soup.get_text()
-
-#Removing the square brackets
-def remove_between_square_brackets(text):
-    return re.sub('\[[^]]*\]', '', text)
-
-#Removing the noisy text
-def denoise_text(text):
-    text = strip_html(text)
-    text = remove_between_square_brackets(text)
-    return text
-#Apply function on review column
-df['review']=df['review'].apply(denoise_text)
-
-#Define function for removing special characters
-def remove_special_characters(text, remove_digits=True):
-    pattern=r'[^a-zA-z0-9\s]'
-    text=re.sub(pattern,'',text)
-    return text
-#Apply function on review column
-df['review']=df['review'].apply(remove_special_characters)
-
-#Stemming the text
-def simple_stemmer(text):
-    ps=nltk.porter.PorterStemmer()
-    text= ' '.join([ps.stem(word) for word in text.split()])
-    return text
-#Apply function on review column
-df['review']=df['review'].apply(simple_stemmer)
-
-#set stopwords to english
-#stop=set(stopwords.words('english'))
-print(stopword_list)
-
-#removing the stopwords
-def remove_stopwords(text, is_lower_case=False):
-    tokens = tokenizer.tokenize(text)
-    tokens = [token.strip() for token in tokens]
-    if is_lower_case:
-        filtered_tokens = [token for token in tokens if token not in stopword_list]
-    else:
-        filtered_tokens = [token for token in tokens if token.lower() not in stopword_list]
-    filtered_text = ' '.join(filtered_tokens)    
-    return filtered_text
-#Apply function on review column
-df['review']=df['review'].apply(remove_stopwords)
 
 # Split the data into training and testing sets
 X = df['review'].values
@@ -90,7 +28,7 @@ X_test_vec = vectorizer.transform(X_test)
 num_decimal_places = 2  # Specify the number of decimal places you want to display
 
 # Randomly select 10 reviews from your dataset (adjust the number as needed)
-random_reviews = random.sample(df['review'].tolist(), 100)
+random_reviews = random.sample(df['review'].tolist(), 4000)
 
 # Initialize variables to store word importance scores for positive and negative reviews
 positive_scores = {}
@@ -110,12 +48,12 @@ def predict_batch(texts):
     return np.hstack((1 - outputs, outputs))  # Include probabilities for both classes
 
 # Define a custom tokenizer function
-# def custom_tokenizer(text):
-#     return text.split()  # Split text on whitespace to keep complete words
+def custom_tokenizer(text):
+    return text.split()  # Split text on whitespace to keep complete words
 
 # Function to generate LIME explanations for a given text
-def generate_lime_explanations(text, predict_fn, num_features=100, labels=[0, 1]):
-    explainer = LimeTextExplainer(class_names=["Negative", "Positive"])#, split_expression=custom_tokenizer
+def generate_lime_explanations(text, predict_fn, num_features=4000, labels=[0, 1]):
+    explainer = LimeTextExplainer(class_names=["Negative", "Positive"], split_expression=custom_tokenizer)
     explanation = explainer.explain_instance(text, predict_fn, num_features=num_features, labels=labels)
     return explanation
 
