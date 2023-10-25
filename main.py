@@ -23,6 +23,8 @@ df = pd.read_csv(dataset_path)
 
 #Tokenization of text
 tokenizer=ToktokTokenizer()
+
+nltk.download('stopwords')
 #Setting English stopwords
 stopword_list=nltk.corpus.stopwords.words('english')
 
